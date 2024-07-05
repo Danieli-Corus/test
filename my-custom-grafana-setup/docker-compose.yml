@@ -1,0 +1,71 @@
+version: '3.6'
+
+services:
+  influxdb:
+    image: influxdb:2.5.1-alpine
+    container_name: influxdb-new
+    restart: unless-stopped
+    networks:
+      - proxy-redirect
+      - app-net
+    ports:
+      - '5000:8086'
+    mem_limit: 250m
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=client
+      - DOCKER_INFLUXDB_INIT_PASSWORD=Admin@1234
+      - DOCKER_INFLUXDB_INIT_ORG=danieli-corus
+      - DOCKER_INFLUXDB_INIT_BUCKET=databus
+      - DOCKER_INFLUXDB_INIT_RETENTION=1w
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=industrialedge
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+
+  grafana:
+    build: 
+      context: .
+      dockerfile: Dockerfile  # Specify the Dockerfile in the current directory
+    image: custom-grafana:latest  # Tag your custom image
+    container_name: grafana-server-new
+    restart: unless-stopped
+    networks:
+      - proxy-redirect
+      - app-net
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=ad1
+      - GF_SECURITY_ADMIN_PASSWORD=admi12  # Change the password
+      - GF_INSTALL_PLUGINS=
+    links:
+      - influxdb
+    ports:
+      - '5001:3000'
+    volumes:
+      - ./grafana.ini:/etc/grafana/grafana.ini
+      - grafana_data:/var/lib/grafana
+      - grafana_logs:/var/log/grafana
+
+  telegraf:
+    image: telegraf:1.24.4
+    container_name: telegraf-new
+    restart: unless-stopped
+    networks:
+      - app-net
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+
+networks:
+  proxy-redirect:
+    external: true
+    name: proxy-redirect
+  app-net:
+    name: app-net
+
+volumes:
+  grafana_data:
+  influxdb_data:
+  grafana_logs:

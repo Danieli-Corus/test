@@ -1,0 +1,8 @@
+/* Custom CSS for Grafana */
+body {
+    background-color: #f4f4f4;
+}
+.panel-title {
+    color: #333;
+    font-family: 'Arial', sans-serif;
+}
